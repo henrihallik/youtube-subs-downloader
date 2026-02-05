@@ -1,0 +1,60 @@
+from youtube_transcript_api import YouTubeTranscriptApi
+
+video_id = 'mJYn4ZlZjyM'
+
+def format_time(seconds):
+    hours = int(seconds // 3600)
+    minutes = int((seconds % 3600) // 60)
+    secs = int(seconds % 60)
+    millis = int((seconds % 1) * 1000)
+    return f"{hours:02d}:{minutes:02d}:{secs:02d},{millis:03d}"
+
+try:
+    api = YouTubeTranscriptApi()
+    
+    # First, list available transcripts
+    print("Checking available transcripts...")
+    transcript_list = api.list(video_id)
+    
+    print(f"\nAvailable transcripts:")
+    for transcript_info in transcript_list:
+        print(f"  - Language: {transcript_info.language} ({transcript_info.language_code})")
+        print(f"    Auto-generated: {transcript_info.is_generated}")
+    
+    # Try to fetch Estonian first, then fall back to any available
+    try:
+        print("\nTrying to fetch Estonian subtitles...")
+        transcript = api.fetch(video_id, languages=['et'])
+    except:
+        print("Estonian not found, trying first available language...")
+        # Get the first available transcript
+        first_transcript = list(transcript_list)[0]
+        transcript = api.fetch(video_id, languages=[first_transcript.language_code])
+    
+    print(f"\nFetching subtitles in {transcript.language} ({transcript.language_code})...")
+    
+    # Save as plain text
+    with open('subtitles.txt', 'w', encoding='utf-8') as f:
+        for snippet in transcript.snippets:
+            f.write(f"{snippet.text}\n")
+    
+    # Save in SRT format with timestamps
+    with open('subtitles.srt', 'w', encoding='utf-8') as f:
+        for i, snippet in enumerate(transcript.snippets, 1):
+            start = snippet.start
+            end = start + snippet.duration
+            
+            f.write(f"{i}\n")
+            f.write(f"{format_time(start)} --> {format_time(end)}\n")
+            f.write(f"{snippet.text}\n\n")
+    
+    print(f"\n✓ Subtitles saved successfully!")
+    print(f"  - Plain text: subtitles.txt")
+    print(f"  - SRT format: subtitles.srt")
+    print(f"\nLanguage: {transcript.language} ({transcript.language_code})")
+    print(f"Auto-generated: {transcript.is_generated}")
+    print(f"Total snippets: {len(transcript.snippets)}")
+    
+except Exception as e:
+    print(f"\n✗ Error: {e}")
+    print("\nThis video may not have subtitles available.")

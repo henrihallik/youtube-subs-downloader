@@ -1,6 +1,8 @@
 from youtube_transcript_api import YouTubeTranscriptApi
+import json
+import requests
 
-video_id = 'mJYn4ZlZjyM'
+video_id = 'r0trwOLcEGQ'
 
 def format_time(seconds):
     hours = int(seconds // 3600)
@@ -24,13 +26,14 @@ try:
     # Try to fetch Estonian first, then fall back to any available
     try:
         print("\nTrying to fetch Estonian subtitles...")
-        transcript = api.fetch(video_id, languages=['et'])
+        transcript_track = transcript_list.find_transcript(['et'])
     except:
         print("Estonian not found, trying first available language...")
         # Get the first available transcript
-        first_transcript = list(transcript_list)[0]
-        transcript = api.fetch(video_id, languages=[first_transcript.language_code])
-    
+        transcript_track = list(transcript_list)[0]
+
+    transcript = transcript_track.fetch()
+
     print(f"\nFetching subtitles in {transcript.language} ({transcript.language_code})...")
     
     # Save as plain text
@@ -47,10 +50,32 @@ try:
             f.write(f"{i}\n")
             f.write(f"{format_time(start)} --> {format_time(end)}\n")
             f.write(f"{snippet.text}\n\n")
-    
+
+    # Save JSON3 track payload (contains extra timing metadata when provided by YouTube).
+    json3_saved = False
+    json3_error = None
+    try:
+        json3_url = f"{transcript_track._url}&fmt=json3"
+        json3_response = requests.get(json3_url, timeout=15)
+        json3_response.raise_for_status()
+        json3_data = json3_response.json()
+
+        if isinstance(json3_data, dict) and "events" in json3_data:
+            with open('subtitles.json3', 'w', encoding='utf-8') as f:
+                json.dump(json3_data, f, ensure_ascii=False, indent=2)
+            json3_saved = True
+        else:
+            json3_error = "JSON3 payload does not include events."
+    except Exception as err:
+        json3_error = str(err)
+
     print(f"\n✓ Subtitles saved successfully!")
     print(f"  - Plain text: subtitles.txt")
     print(f"  - SRT format: subtitles.srt")
+    if json3_saved:
+        print(f"  - JSON3 format: subtitles.json3")
+    else:
+        print(f"  - JSON3 format: not available ({json3_error})")
     print(f"\nLanguage: {transcript.language} ({transcript.language_code})")
     print(f"Auto-generated: {transcript.is_generated}")
     print(f"Total snippets: {len(transcript.snippets)}")

@@ -38,7 +38,7 @@ Downloads only JSON3 subtitles using command line parameters.
 Usage:
 
 ```bash
-python3 clip-subs-downloader.py VIDEO_ID [OUTPUT_FILENAME] [--start-ms MS] [--end-ms MS]
+python3 clip-subs-downloader.py VIDEO_ID [OUTPUT_FILENAME] [--start-ms MS] [--end-ms MS] [--language CODE]
 ```
 
 Examples:
@@ -52,12 +52,15 @@ python3 clip-subs-downloader.py r0trwOLcEGQ my-subs.json3
 
 # Keeps only subtitles between 60,000ms and 120,000ms
 python3 clip-subs-downloader.py r0trwOLcEGQ clip.json3 --start-ms 60000 --end-ms 120000
+
+# Uses English subtitles (default is Estonian: et)
+python3 clip-subs-downloader.py r0trwOLcEGQ clip.json3 --language en
 ```
 
 ## Notes
 
 - Scripts automatically detect available subtitle languages
-- Scripts try Estonian first, then fall back to the first available language
+- Scripts default to Estonian (`et`) and fall back to the first available language
 - Works with both manual and auto-generated subtitles
 - `clip-subs-downloader.py` clips by time locally after download (YouTube APIs do not expose transcript range download)
 - `--start-ms` and `--end-ms` use milliseconds to match JSON3 timing fields

@@ -30,6 +30,11 @@ def parse_args():
         default=None,
         help="Clip end time in milliseconds (exclusive).",
     )
+    parser.add_argument(
+        "--language",
+        default="en",
+        help="Preferred subtitle language code (default: et).",
+    )
     return parser.parse_args()
 
 
@@ -62,6 +67,7 @@ def clip_events(events, start_ms=None, end_ms=None):
 def main():
     args = parse_args()
     api = YouTubeTranscriptApi()
+    preferred_language = args.language.strip()
 
     if args.start_ms is not None and args.start_ms < 0:
         print("\n✗ Error: --start-ms must be >= 0.")
@@ -75,6 +81,9 @@ def main():
         and args.end_ms <= args.start_ms
     ):
         print("\n✗ Error: --end-ms must be greater than --start-ms.")
+        return
+    if not preferred_language:
+        print("\n✗ Error: --language cannot be empty.")
         return
 
     try:
@@ -91,10 +100,12 @@ def main():
         print(f"    Auto-generated: {transcript_info.is_generated}")
 
     try:
-        print("\nTrying to fetch Estonian subtitles...")
-        transcript_track = transcript_list.find_transcript(["et"])
+        print(f"\nTrying to fetch language: {preferred_language}...")
+        transcript_track = transcript_list.find_transcript([preferred_language])
     except Exception:
-        print("Estonian not found, trying first available language...")
+        print(
+            f"Language {preferred_language} not found, trying first available language..."
+        )
         transcript_track = list(transcript_list)[0]
 
     try:
